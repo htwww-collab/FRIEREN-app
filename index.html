@@ -3,112 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
-    <title>芙莉蓮：外匯鍊金編年史</title>
+    <title>芙莉蓮：外匯鍊金編年史 PRO</title>
     <link rel="apple-touch-icon" href="icon.png">
-    <meta name="apple-mobile-web-app-title" content="芙莉蓮鍊金">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <style>
         :root {
-            --bg-deep: #0a0a0f;
-            --panel-bg: #16161e;
-            --frieren-purple: #9b6ccf;
-            --gold: #f59e0b;
-            --mana-blue: #38bdf8;
-            --danger-red: #e11d48;
-            --success-green: #10b981;
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --purple: #a78bfa;
+            --gold: #fbbf24;
+            --up: #ef4444; /* 升 (紅) */
+            --down: #22c55e; /* 跌 (綠) */
         }
 
         body, html {
-            margin: 0; padding: 0;
-            background-color: #000;
-            color: #e2e8f0;
-            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
-            height: 100%; width: 100%;
-            overflow: hidden;
-            display: flex; justify-content: center;
+            margin: 0; padding: 0; background: #000; color: #f8fafc;
+            font-family: 'PingFang TC', sans-serif; height: 100%; overflow: hidden;
         }
 
         .app-container {
-            width: 100vw; height: 100vh;
-            max-width: 450px; max-height: 800px;
-            background: var(--bg-deep);
-            display: flex; flex-direction: column;
-            position: relative;
+            width: 100vw; height: 100vh; max-width: 450px; 
+            background: var(--bg); display: flex; flex-direction: column;
         }
 
-        /* 頂部：同伴狀態 */
+        /* 頂部狀態與人物 */
         .header {
-            padding: 20px 15px 10px;
-            background: linear-gradient(180deg, #1f1f2e 0%, #16161e 100%);
-            border-bottom: 2px solid var(--frieren-purple);
-            padding-top: calc(20px + env(safe-area-inset-top));
+            padding: 40px 15px 10px; background: var(--panel);
+            border-bottom: 2px solid var(--purple);
         }
 
-        .party-members { display: flex; gap: 8px; overflow-x: auto; }
-        .member-tag {
-            background: rgba(155, 108, 207, 0.1);
-            border: 1px solid var(--frieren-purple);
-            padding: 4px 8px; border-radius: 4px; font-size: 11px; white-space: nowrap;
-            color: var(--frieren-purple);
-        }
+        .party { display: flex; gap: 10px; margin-bottom: 10px; }
+        .char { font-size: 12px; background: rgba(167, 139, 250, 0.2); padding: 4px 8px; border-radius: 20px; border: 1px solid var(--purple); }
 
-        /* 資金顯示 */
-        .market-info {
-            padding: 10px 15px;
-            display: flex; justify-content: space-between; align-items: center;
-            background: rgba(0,0,0,0.3);
-        }
-        .balance-box { color: var(--gold); font-weight: bold; font-size: 20px; font-family: monospace; }
+        .balance-area { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
+        .gold-count { color: var(--gold); font-size: 24px; font-weight: bold; font-family: monospace; }
 
-        /* 武器清單 */
-        .scroll-area {
-            flex: 1; overflow-y: auto; padding: 15px;
-            background: radial-gradient(circle at center, #16161e 0%, #0a0a0f 100%);
-        }
+        /* 武器市場 */
+        .market { flex: 1; overflow-y: auto; padding: 10px; }
         .weapon-card {
-            background: var(--panel-bg);
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 15px; margin-bottom: 12px;
-            display: flex; justify-content: space-between; align-items: center;
+            background: var(--panel); border: 1px solid #334155;
+            border-radius: 12px; padding: 15px; margin-bottom: 10px;
+            transition: 0.2s;
         }
-        .weapon-card.active { border-color: var(--mana-blue); box-shadow: 0 0 10px rgba(56,189,248,0.2); }
-        .weapon-name { color: var(--gold); font-weight: bold; font-size: 15px; }
-        .weapon-price { font-family: monospace; font-size: 19px; }
+        .weapon-card.selected { border-color: var(--gold); background: #334155; }
+        
+        .weapon-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 5px; }
+        .weapon-icon { font-size: 20px; margin-right: 8px; }
+        
+        /* 簡易 K 線模擬圖 */
+        .chart-mini {
+            height: 40px; background: #0f172a; border-radius: 4px; 
+            margin: 8px 0; display: flex; align-items: flex-end; gap: 2px; padding: 2px;
+        }
+        .k-bar { width: 4px; background: var(--up); border-radius: 1px; }
 
-        /* 底部對話框 */
-        .footer {
-            background: #111116;
-            padding: 15px;
-            border-top: 1px solid #222;
+        /* 交易面板 */
+        .trade-footer {
+            background: var(--panel); padding: 15px; border-top: 1px solid #334155;
             padding-bottom: calc(15px + env(safe-area-inset-bottom));
         }
+
         .dialogue {
-            background: rgba(0,0,0,0.5);
-            border: 1px solid var(--frieren-purple);
-            padding: 12px; border-radius: 6px;
-            font-size: 13px; height: 45px; margin-bottom: 12px;
-            display: flex; align-items: center; color: var(--mana-blue);
+            background: rgba(0,0,0,0.4); border-left: 4px solid var(--purple);
+            padding: 10px; font-size: 13px; color: var(--mana-blue); margin-bottom: 12px; height: 36px;
         }
-        .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn {
-            border: none; border-radius: 6px; padding: 14px;
-            font-weight: bold; cursor: pointer; font-size: 14px;
+            border: none; border-radius: 8px; padding: 12px; font-weight: bold;
+            font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center;
         }
-        .btn-buy { background: var(--frieren-purple); color: #fff; }
-        .btn-book { background: #222; color: var(--gold); border: 1px solid var(--gold); }
+        .btn-buy { background: var(--up); color: white; }
+        .btn-sell { background: var(--down); color: white; }
+        .btn-book { background: #475569; color: var(--gold); grid-column: span 2; margin-top: 5px; }
 
         /* 魔法書彈窗 */
         .overlay {
-            position: absolute; inset: 0; background: rgba(0,0,0,0.9);
-            display: none; flex-direction: column; padding: 40px 30px; z-index: 100;
+            position: absolute; inset: 0; background: rgba(0,0,0,0.95);
+            display: none; flex-direction: column; padding: 40px 20px; z-index: 100;
         }
-        .book-content {
-            background: #1c1c24; border: 4px double var(--gold);
-            padding: 25px; border-radius: 10px; flex: 1;
+        .book-ui {
+            border: 4px double var(--gold); padding: 20px; border-radius: 8px; flex: 1;
+            background: #1e293b; overflow-y: auto;
         }
     </style>
 </head>
@@ -116,112 +94,144 @@
 
 <div class="app-container">
     <div class="header">
-        <div class="party-members" id="party-ui">
-            <div class="member-tag">🧝‍♀️ 芙莉蓮</div>
-            <div class="member-tag">🪄 費倫</div>
-            <div class="member-tag">🛡️ 修塔爾克</div>
+        <div class="party">
+            <div class="char">🧝‍♀️ 芙莉蓮</div>
+            <div class="char">🪄 費倫</div>
+            <div class="char">🛡️ 修塔爾克</div>
+        </div>
+        <div class="balance-area">
+            <div><small>持有資金</small><br><span class="gold-count" id="gold">1000.00</span> <small>G</small></div>
+            <div id="position-info" style="text-align: right; font-size: 12px; color: #94a3b8;">目前無持倉</div>
         </div>
     </div>
 
-    <div class="market-info">
-        <div class="balance-box">💰 <span id="gold-val">1000.00</span> G</div>
-        <div style="font-size: 11px; color: #888;">目標: <span id="progress-tag">收集魔法</span></div>
-    </div>
+    <div class="market" id="weapon-list"></div>
 
-    <div class="scroll-area" id="weapon-list"></div>
-
-    <div class="footer">
-        <div class="dialogue" id="npc-talk">
-            欣梅爾：走吧，這是一場為了了解人類（市場）的旅行。
-        </div>
-        <div class="action-btns">
-            <button class="btn btn-book" onclick="openBook()">📜 弗蘭梅魔法書</button>
-            <button class="btn btn-buy" onclick="settleTrade()">⚔️ 地下城結算</button>
+    <div class="trade-footer">
+        <div class="dialogue" id="talk">欣梅爾：只要踏出第一步，冒險就開始了。</div>
+        <div class="controls">
+            <button class="btn btn-buy" onclick="doTrade('BUY')">⚔️ 買入進攻</button>
+            <button class="btn btn-sell" onclick="doTrade('SELL')">🛡️ 賣出結算</button>
+            <button class="btn btn-book" onclick="toggleBook(true)">📖 弗蘭梅魔法書</button>
         </div>
     </div>
 
     <div class="overlay" id="book-overlay">
-        <div class="book-content">
-            <h2 style="color:var(--gold); text-align:center;">弗蘭梅的遺教</h2>
-            <div id="analysis-text" style="line-height: 1.8; font-size: 14px; color: #ccc;"></div>
-            <button class="btn btn-book" style="margin-top:25px; width:100%" onclick="closeBook()">合上魔法書</button>
+        <div class="book-ui">
+            <h2 style="color:var(--gold); text-align:center;">📜 弗蘭梅的教誨</h2>
+            <div id="book-content"></div>
+            <button class="btn btn-book" onclick="toggleBook(false)">合上書本</button>
         </div>
     </div>
 </div>
 
 <script>
-    let gameState = {
-        gold: 1000.00,
-        unlockedCompanions: ['費倫', '修塔爾克'],
-        activeWeapon: null,
-        weapons: [
-            { id: 'XAU', name: '辛梅爾的追憶 (黃金)', symbol: 'XAU/USD', price: 2350.15, trend: 0, unlocked: true },
-            { id: 'XAG', name: '黑礦石法杖 (白銀)', symbol: 'XAG/USD', price: 28.40, trend: 0, unlocked: true },
-            { id: 'COPPER', name: '戰士的重斧 (銅)', symbol: 'Copper', price: 4.50, trend: 0, unlocked: true },
-            { id: 'JPY', name: '海塔的聖杯 (日圓)', symbol: 'USD/JPY', price: 151.20, trend: 0, unlocked: false },
-            { id: 'EUR', name: '贊恩的符文 (歐元)', symbol: 'EUR/USD', price: 1.0855, trend: 0, unlocked: false }
-        ]
-    };
+    let gold = 1000.00;
+    let currentPos = null; // { id, buyPrice, amount }
+    let selectedId = 'XAU';
+
+    const weapons = [
+        { id: 'XAU', name: '辛梅爾的追憶', symbol: '黃金', price: 2350.0, icon: '✨', history: [] },
+        { id: 'XAG', name: '黑礦石法杖', symbol: '白銀', price: 28.5, icon: '🌑', history: [] },
+        { id: 'JPY', name: '海塔的聖杯', symbol: '美日', price: 155.0, icon: '🍶', history: [] },
+        { id: 'EUR', name: '贊恩的符文', symbol: '歐美', price: 1.085, icon: '🌿', history: [] }
+    ];
+
+    function init() {
+        weapons.forEach(w => { for(let i=0; i<20; i++) w.history.push(Math.random() * 20 + 10); });
+        tick();
+        setInterval(tick, 2000);
+    }
 
     function tick() {
-        gameState.weapons.forEach(w => {
-            const change = (Math.random() - 0.5) * (w.price * 0.006);
-            w.trend = change;
+        weapons.forEach(w => {
+            const change = (Math.random() - 0.5) * (w.price * 0.004);
             w.price += change;
+            w.history.push(Math.abs(change * 500));
+            if(w.history.length > 25) w.history.shift();
         });
         render();
+        updatePositionDisplay();
     }
 
     function render() {
-        document.getElementById('gold-val').innerText = gameState.gold.toFixed(2);
         const list = document.getElementById('weapon-list');
         list.innerHTML = '';
-        gameState.weapons.forEach(w => {
-            if(!w.unlocked && gameState.gold >= 1800) w.unlocked = true; 
-            if(!w.unlocked) return;
+        weapons.forEach(w => {
+            const isSelected = selectedId === w.id;
             const card = document.createElement('div');
-            card.className = `weapon-card ${gameState.activeWeapon?.id === w.id ? 'active' : ''}`;
-            card.onclick = () => selectWeapon(w);
-            const color = w.trend >= 0 ? 'var(--success-green)' : 'var(--danger-red)';
-            card.innerHTML = `<div class="weapon-meta"><span class="weapon-name">${w.name}</span><br><small>${w.symbol}</small></div>
-                              <div class="weapon-price" style="color: ${color}">${w.price.toFixed(w.id === 'EUR' ? 4 : 2)} ${w.trend >= 0 ? '▲' : '▼'}</div>`;
+            card.className = `weapon-card ${isSelected ? 'selected' : ''}`;
+            card.onclick = () => { selectedId = w.id; render(); };
+            
+            let kHtml = '';
+            w.history.forEach(h => {
+                kHtml += `<div class="k-bar" style="height:${h}px; background:${Math.random() > 0.5 ? 'var(--up)':'var(--down)'}"></div>`;
+            });
+
+            card.innerHTML = `
+                <div class="weapon-header">
+                    <span><span class="weapon-icon">${w.icon}</span>${w.name}</span>
+                    <span style="font-family:monospace">${w.price.toFixed(w.id==='EUR'?4:2)}</span>
+                </div>
+                <div class="chart-mini">${kHtml}</div>
+                <div style="font-size:10px; color:#64748b">即時市場波動：${w.symbol} / USD</div>
+            `;
             list.appendChild(card);
         });
-        if(gameState.gold > 1800 && !gameState.unlockedCompanions.includes('海塔')) unlockCompanion('海塔', '🍻 海塔');
+        document.getElementById('gold').innerText = gold.toFixed(2);
     }
 
-    function selectWeapon(w) {
-        if(gameState.activeWeapon) return;
-        gameState.activeWeapon = { ...w, buyPrice: w.price };
-        talk('FRIEREN', `已帶上 ${w.name}，等它的魔法（價格）變強吧。`);
-    }
-
-    function settleTrade() {
-        if(!gameState.activeWeapon) { talk('FRIEREN', '不拿寶箱怪（武器）可無法戰鬥喔。'); return; }
-        const currentPrice = gameState.weapons.find(w => w.id === gameState.activeWeapon.id).price;
-        const profit = (currentPrice - gameState.activeWeapon.buyPrice) * 1000;
-        gameState.gold += profit;
-        talk(profit >= 0 ? 'HIMMEL' : 'STARK', profit >= 0 ? `漂亮的冒險！獲得了 ${profit.toFixed(2)} G。` : `嗚啊！被寶箱怪咬了... 損失 ${Math.abs(profit).toFixed(2)} G。`);
-        gameState.activeWeapon = null;
+    function doTrade(type) {
+        const weapon = weapons.find(w => w.id === selectedId);
+        if (type === 'BUY') {
+            if (currentPos) { talk('FERN', '芙莉蓮大人，請先結算目前的武器再買新的。'); return; }
+            currentPos = { id: selectedId, buyPrice: weapon.price, name: weapon.name };
+            talk('HIMMEL', `這把 ${weapon.name} 就交給你了，去創造傳說吧！`);
+        } else {
+            if (!currentPos) { talk('STARK', '我...我還沒準備好武器，沒辦法結算啊！'); return; }
+            const weaponNow = weapons.find(w => w.id === currentPos.id);
+            const profit = (weaponNow.price - currentPos.buyPrice) * 1000;
+            gold += profit;
+            talk('FRIEREN', profit >= 0 ? `賺到了 ${profit.toFixed(2)} G，可以買甜點了。` : `虧損了 ${Math.abs(profit).toFixed(2)} G，真是麻煩。`);
+            currentPos = null;
+        }
         render();
     }
 
-    function talk(who, text) { document.getElementById('npc-talk').innerText = `${who}：${text}`; }
-
-    function openBook() {
-        document.getElementById('book-overlay').style.display = 'flex';
-        const notes = ["黃金魔法正在匯聚，短期看漲。","費倫提醒：保證金不足時，別隨便挑戰地下城。","日圓聖杯能量低迷，適合長期持有。","欣梅爾：只要踏出第一步，就是冒險的開始。"];
-        document.getElementById('analysis-text').innerText = notes[Math.floor(Math.random()*notes.length)];
-    }
-    function closeBook() { document.getElementById('book-overlay').style.display = 'none'; }
-    function unlockCompanion(n, t) {
-        gameState.unlockedCompanions.push(n);
-        const div = document.createElement('div'); div.className = 'member-tag'; div.innerText = t;
-        document.getElementById('party-ui').appendChild(div);
+    function updatePositionDisplay() {
+        const info = document.getElementById('position-info');
+        if (currentPos) {
+            const w = weapons.find(w => w.id === currentPos.id);
+            const p = (w.price - currentPos.buyPrice) * 1000;
+            info.innerHTML = `持有：${currentPos.name}<br>盈虧：<span style="color:${p>=0?'var(--up)':'var(--down)'}">${p.toFixed(2)} G</span>`;
+        } else {
+            info.innerText = '目前無持倉';
+        }
     }
 
-    setInterval(tick, 2000);
-    render();
+    function talk(who, text) {
+        document.getElementById('talk').innerText = `${who}：${text}`;
+    }
+
+    function toggleBook(show) {
+        const overlay = document.getElementById('book-overlay');
+        overlay.style.display = show ? 'flex' : 'none';
+        if (show) {
+            const w = weapons.find(w => w.id === selectedId);
+            const r1 = Math.random() > 0.5 ? "看漲" : "看跌";
+            const r2 = Math.random() > 0.5 ? "牛市重啟" : "能量耗盡";
+            document.getElementById('book-content').innerHTML = `
+                <div style="margin-bottom:20px; border-bottom:1px solid #444; padding-bottom:10px;">
+                    <h3 style="color:var(--purple)">${w.icon} ${w.name} 觀測</h3>
+                    <p><b>短期建議：</b> 市場魔力流動顯示目前${r1}。建議在 5 分鐘內完成鍊金結算。</p>
+                    <p><b>長期展望：</b> 此武器蘊含${r2}潛力，適合累積魔力。或是等待星辰到達正確位置時再出手。</p>
+                </div>
+                <p style="font-size:12px; color:#888;">*註：弗蘭梅曾說，市場就跟寶箱怪一樣，外表誘人，內裡危險。</p>
+            `;
+        }
+    }
+
+    init();
 </script>
 </body>
 </html>
