@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>芙莉蓮：像素數據鍊金傳說 V4.0</title>
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        /* --- 像素 MMORPG 風格定義 --- */
+        :root {
+            --p-border: #4a4a58;
+            --p-dark: #12121a;
+            --p-panel: #242435;
+            --p-purple: #9b6ccf;
+            --p-gold: #eeb951;
+            --p-green: #76c73f;
+            --p-red: #d34549;
+            --p-blue: #4fa6e1;
+            --p-text: #e0e0e0;
+        }
+
+        @font-face {
+            font-family: 'Pixel';
+            src: url('https://fonts.cdnfonts.com/s/18928/Minecraftia.woff') format('woff');
+        }
+
+        body, html {
+            margin: 0; padding: 0; background: #000; color: var(--p-text);
+            font-family: 'Pixel', 'Courier New', monospace; height: 100%; overflow: hidden;
+        }
+
+        /* 遊戲視窗容器 */
+        .game-window {
+            width: 100vw; height: 100vh; max-width: 450px;
+            background: var(--p-dark); border: 4px solid var(--p-border);
+            display: flex; flex-direction: column; position: relative; box-sizing: border-box;
+        }
+
+        /* 1. 勇者 HUD (頂部狀態欄) */
+        .hud {
+            padding: calc(35px + env(safe-area-inset-top)) 10px 10px;
+            background: #1a1a26; border-bottom: 4px solid var(--p-border);
+        }
+        .party-status { display: flex; gap: 10px; margin-bottom: 8px; }
+        .char-box { flex: 1; border: 2px solid #555; padding: 4px; display: flex; align-items: center; gap: 5px; font-size: 10px; }
+        .hp-bar { flex: 1; height: 6px; background: #222; border: 1px solid #000; position: relative; }
+        .hp-fill { position: absolute; height: 100%; background: var(--p-green); width: 80%; }
+
+        .currency-bar { display: flex; justify-content: space-between; font-size: 14px; color: var(--p-gold); }
+
+        /* 2. 15分鐘 K線魔法陣 (主圖表) */
+        .chart-container { padding: 10px; flex: 0.8; }
+        .main-chart {
+            height: 100%; background: rgba(0,0,0,0.5); border: 3px solid var(--p-border);
+            position: relative; display: flex; align-items: flex-end; gap: 1px; padding: 5px; overflow: hidden;
+        }
+        .chart-label { position: absolute; top: 5px; left: 5px; font-size: 8px; color: var(--p-blue); }
+
+        /* 3. 鍊金列表 (武器選擇) */
+        .weapon-list { flex: 1; overflow-y: auto; padding: 10px; background: #161621; }
+        .weapon-item {
+            background: var(--p-panel); border: 3px solid var(--p-border);
+            margin-bottom: 8px; padding: 10px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .weapon-item.active { border-color: var(--p-gold); background: #2f2f45; }
+        .weapon-name { font-size: 12px; color: var(--p-purple); }
+        .weapon-price { font-size: 14px; color: #fff; }
+
+        /* 4. 遊戲控制器 (功能按鈕) */
+        .controls {
+            background: #1a1a26; padding: 15px; border-top: 4px solid var(--p-border);
+            padding-bottom: calc(15px + env(safe-area-inset-bottom));
+        }
+        .dialogue-window {
+            background: #000; border: 2px solid var(--p-blue); padding: 8px;
+            font-size: 11px; color: var(--p-blue); margin-bottom: 12px; min-height: 35px;
+        }
+
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .game-btn {
+            border: 4px solid #555; padding: 12px; font-family: inherit; font-weight: bold;
+            font-size: 13px; cursor: pointer; text-transform: uppercase;
+            box-shadow: inset -3px -3px 0px 0px #222; position: relative;
+        }
+        .game-btn:active { top: 2px; box-shadow: inset 1px 1px 0px 0px #000; }
+        
+        .btn-attack { background: var(--p-red); color: white; }
+        .btn-grimoire { background: var(--p-gold); color: #000; }
+
+        /* 5. 魔法書分頁彈窗 */
+        .modal {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.9);
+            display: none; flex-direction: column; padding: 25px; z-index: 100;
+        }
+        .book-frame {
+            border: 6px double var(--p-gold); background: #2d2d39; flex: 1;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        .book-tab-row { display: flex; }
+        .book-tab { flex: 1; padding: 10px; text-align: center; font-size: 11px; background: #1e1e2d; border-bottom: 2px solid var(--p-gold); }
+        .book-tab.active { background: var(--p-gold); color: #000; }
+        .book-text { flex: 1; padding: 15px; overflow-y: auto; font-size: 11px; line-height: 1.6; }
+
+        /* 蠟燭樣式 */
+        .candle { flex: 1; position: relative; min-width: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="game-window">
+    <div class="hud">
+        <div class="party-status">
+            <div class="char-box">🧝‍♀️ <div class="hp-bar"><div class="hp-fill"></div></div></div>
+            <div class="char-box">🪄 <div class="hp-bar"><div class="hp-fill" style="width:90%"></div></div></div>
+        </div>
+        <div class="currency-bar">
+            <span>💰 <span id="gold">1000.00</span> G</span>
+            <span>RANK: 數據大魔法使</span>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <div class="main-chart" id="main-chart">
+            <div class="chart-label" id="chart-title">觀測中: 辛梅爾的追憶 (15M)</div>
+        </div>
+    </div>
+
+    <div class="weapon-list" id="weapon-list"></div>
+
+    <div class="controls">
+        <div class="dialogue-window" id="dialogue">
+            芙莉蓮：市場出現了未知的數據魔力，我們去地下城看看。
+        </div>
+        <div class="btn-grid">
+            <button class="game-btn btn-grimoire" onclick="openBook()">📖 弗蘭梅魔法書</button>
+            <button class="game-btn btn-attack" onclick="doTrade()">⚔️ 下注攻堅/結算</button>
+        </div>
+    </div>
+
+    <div class="modal" id="book-modal">
+        <div class="book-frame">
+            <div class="book-tab-row">
+                <div class="book-tab active" id="t1" onclick="switchTab(1)">🔮 數據占卜</div>
+                <div class="book-tab" id="t2" onclick="switchTab(2)">📜 新手講堂</div>
+            </div>
+            <div class="book-text" id="book-text"></div>
+            <button class="game-btn btn-grimoire" style="margin: 10px;" onclick="closeBook()">合上書本</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let gold = 1000.00;
+    let selectedId = 'XAU';
+    let currentPos = null; // { price, id }
+    let activeTab = 1;
+
+    const marketData = {
+        'XAU': { name: '辛梅爾的追憶', base: 2350, price: 2350, history: [] },
+        'JPY': { name: '海塔的聖杯', base: 155, price: 155, history: [] },
+        'EUR': { name: '贊恩的符文', base: 1.08, price: 1.08, history: [] }
+    };
+
+    function init() {
+        // 初始化 60 根 K 線 (代表 15 分鐘，每根 15 秒)
+        Object.keys(marketData).forEach(k => {
+            let last = marketData[k].base;
+            for(let i=0; i<60; i++) {
+                const candle = generateCandle(last);
+                marketData[k].history.push(candle);
+                last = candle.c;
+            }
+            marketData[k].price = last;
+        });
+        render();
+        setInterval(updateMarket, 2000);
+    }
+
+    function generateCandle(base) {
+        const volatility = base * 0.002;
+        const o = base;
+        const c = o + (Math.random() - 0.5) * volatility;
+        const h = Math.max(o, c) + Math.random() * (volatility * 0.5);
+        const l = Math.min(o, c) - Math.random() * (volatility * 0.5);
+        return { o, c, h, l };
+    }
+
+    function updateMarket() {
+        Object.keys(marketData).forEach(k => {
+            const m = marketData[k];
+            const next = generateCandle(m.price);
+            m.price = next.c;
+            m.history.push(next);
+            if(m.history.length > 60) m.history.shift();
+        });
+        render();
+    }
+
+    function render() {
+        document.getElementById('gold').innerText = gold.toFixed(2);
+        document.getElementById('chart-title').innerText = `觀測中: ${marketData[selectedId].name} (15M)`;
+        
+        // 渲染 15 分鐘 K 線
+        const chart = document.getElementById('main-chart');
+        // 保留 label，清除舊蠟燭
+        const label = chart.querySelector('.chart-label');
+        chart.innerHTML = '';
+        chart.appendChild(label);
+
+        const data = marketData[selectedId].history;
+        const minP = Math.min(...data.map(d => d.l)) * 0.9995;
+        const maxP = Math.max(...data.map(d => d.h)) * 1.0005;
+        const range = maxP - minP;
+
+        data.forEach(d => {
+            const div = document.createElement('div');
+            div.className = 'candle';
+            const color = d.c >= d.o ? 'var(--p-green)' : 'var(--p-red)';
+            const h = Math.abs(d.c - d.o) / range * 100;
+            const b = (Math.min(d.o, d.c) - minP) / range * 100;
+            const wickH = (d.h - d.l) / range * 100;
+            const wickB = (d.l - minP) / range * 100;
+            
+            div.innerHTML = `
+                <div style="position:absolute; bottom:${wickB}%; left:50%; width:1px; height:${wickH}%; background:${color}; opacity:0.6;"></div>
+                <div style="position:absolute; bottom:${b}%; left:0; width:100%; height:max(${h}%, 2px); background:${color};"></div>
+            `;
+            chart.appendChild(div);
+        });
+
+        // 渲染武器列表
+        const list = document.getElementById('weapon-list');
+        list.innerHTML = '';
+        Object.keys(marketData).forEach(k => {
+            const m = marketData[k];
+            const item = document.createElement('div');
+            item.className = `weapon-item ${selectedId === k ? 'active' : ''}`;
+            item.onclick = () => { selectedId = k; render(); };
+            
+            let posText = "";
+            if(currentPos && currentPos.id === k) {
+                const profit = (m.price - currentPos.price) * 1000;
+                const pColor = profit >= 0 ? 'var(--p-green)' : 'var(--p-red)';
+                posText = `<br><span style="color:${pColor}; font-size:10px;">持倉盈虧: ${profit.toFixed(2)} G</span>`;
+            }
+
+            item.innerHTML = `<div><b class="weapon-name">${m.name}</b>${posText}</div>
+                              <div class="weapon-price">${m.price.toFixed(k==='EUR'?4:2)}</div>`;
+            list.appendChild(item);
+        });
+    }
+
+    function doTrade() {
+        const m = marketData[selectedId];
+        if(currentPos) {
+            const profit = (m.price - currentPos.price) * 1000;
+            gold += profit;
+            say(profit >= 0 ? `🎊 攻堅成功！獲得 ${profit.toFixed(2)} G。` : `😨 撤退失敗，損失 ${Math.abs(profit).toFixed(2)} G。`);
+            currentPos = null;
+        } else {
+            currentPos = { id: selectedId, price: m.price };
+            say(`⚔️ 使用 ${m.name} 突擊地下城！買入價: ${m.price.toFixed(2)}。`);
+        }
+        render();
+    }
+
+    function say(t) { document.getElementById('dialogue').innerText = `系統提示：${t}`; }
+
+    // 魔法書功能
+    function openBook() {
+        document.getElementById('book-modal').style.display = 'flex';
+        switchTab(activeTab);
+    }
+    function closeBook() { document.getElementById('book-modal').style.display = 'none'; }
+
+    function switchTab(t) {
+        activeTab = t;
+        document.getElementById('t1').className = t === 1 ? 'book-tab active' : 'book-tab';
+        document.getElementById('t2').className = t === 2 ? 'book-tab active' : 'book-tab';
+        
+        const body = document.getElementById('book-text');
+        if(t === 1) {
+            const m = marketData[selectedId];
+            const isUp = m.history[m.history.length-1].c > m.history[m.history.length-1].o;
+            body.innerHTML = `
+                <h3 style="color:var(--p-gold)">🔮 ${m.name} 數據占卜</h3>
+                <p>目前魔力流向：<span style="color:${isUp?'var(--p-green)':'var(--p-red)'}">${isUp?'多頭擴張':'空頭侵蝕'}</span></p>
+                <p><b>弗蘭梅的建議：</b><br>
+                ${isUp ? "目前的魔力呈上升趨勢，若能看到 K 線回踩 15 分鐘內的低點，那是極佳的鍊金（買入）機會。" : "魔力正在衰退，不要急著進攻，耐心等待底部的支撐結界出現。"}</p>
+            `;
+        } else {
+            body.innerHTML = `
+                <h3 style="color:var(--p-gold)">📜 數據鍊金新手講堂</h3>
+                <p><b>1. 什麼是 15 分鐘觀測？</b><br>每根蠟燭代表一段時間的魔力凝聚。60 根蠟燭能讓你看到更穩定的市場情緒，避免被瞬間的魔法干擾（雜訊）騙走資金。</p>
+                <p><b>2. 買入的最佳時機</b><br>當你看到連續幾根 K 線在同一個底部彈起，那裡就是「支撐位」。在支撐位買入，就像在防禦結界內戰鬥一樣安全。</p>
+                <p><b>3. 獲利結算</b><br>不要等魔力完全枯竭才撤退。當價格觸及前方的阻力位（高點）時，就是最棒的收割時刻。</p>
+            `;
+        }
+    }
+
+    init();
+</script>
+</body>
+</html>
